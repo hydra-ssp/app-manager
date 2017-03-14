@@ -1,0 +1,31 @@
+<div class="modal fade" tabindex="-1" role="dialog" id="add_app_modal">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title">Upload an App</h4>
+      </div>
+      <div class="modal-body">
+          <div class="alert alert-danger" role="alert">
+              <strong>Warning</strong> Uploading files to your server can be a serious security risk
+              <br>
+              Make sure you upload only files from trustworthy sources.
+          </div>
+          <form id="create-app" action="upload_app" method="POST" enctype=multipart/form-data>
+            <table class="table">
+            <tr>
+                <td><label for="app-file-input">Find ZIP FIle</label></td>
+                <td><input id="app-file-input" type="file" name="app_folder" value=""></input></td>
+            </tr>
+            </table>
+          </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="close-create-app-button" class="btn btn-default" data-dismiss="modal">Close</button>
+        <button type="button" id="create-app-button" class="btn btn-success">Upload</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+

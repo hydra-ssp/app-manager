@@ -1,0 +1,21 @@
+<div class="modal fade" tabindex="-1" role="dialog" id="delete_app_modal" data-keyboard="true" data-backdrop="modal">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title">Delete <p class="name"></p></h4>
+      </div>
+      <div class="modal-body">
+          <form id="delete-app" action="create_app" type="POST">
+                <input id="app-id-input" type="hidden" name="app_id" value=""></input></td>
+                <input id="app-name" type="hidden" name="app_name" value=""></input></td>
+              <p> Are you sure you want to delete app  </p> <p class='name'></p>
+          </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="close-delete-app-button" class="btn btn-default" data-dismiss="modal">Close</button>
+        <button type="button" id="delete-app-button" class="btn btn-danger">Delete</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->

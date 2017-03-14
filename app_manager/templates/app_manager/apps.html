@@ -1,0 +1,50 @@
+{% extends 'page_layout.html' %}
+{% block title %}App Manager{% endblock %}
+
+{% block content %}
+  <meta content="text/html; charset=UTF-8" http-equiv="content-type"/>
+
+  <script src="{{url_for('app_manager.static', filename='js/manage.js')}}"></script>
+  <script>
+    var upload_url = "{{url_for('app_manager.do_upload_app')}}"
+    var delete_app_url = "{{url_for('app_manager.do_delete_app')}}"
+  </script>
+
+    <div id="apps-container" class="container-fluid">
+
+
+        <div class="container-fluid grid">
+        <h2>Available Apps</h2>
+            <div id='applist'>
+              <ul class="list-unstyled row">
+                {% for a in apps %}
+                    <li id="app-{{a.id}}" class="listitem col-sm-3 col-md-3 col-lg-3 col-xl-1">
+                        <a type="button"
+                           class="btn btn-lg link"
+                           href="{{url_for('app_manager.go_app', app_id=a.id, _external=True) }}">
+                            <span>
+                                <div class="head">{{a.app_name}}
+                                </div>
+                                <div class="summary">
+                                    {{a.description}}
+                                </div>
+                            </span>
+                        </a>
+                        <div class='btn btn-secondary delete-btn' data-target="#delete_app_modal" data-toggle="modal"><span class="fa fa-trash"></span></div>
+                    </li>
+                {% endfor %}
+                <li id="new-app" class="col-sm-3 col-md-3 col-lg-3">
+                    <span class="btn btn-lg link" data-toggle="modal" data-target="#add_app_modal">
+                        <span class="fa fa-plus "></span>
+                    </span>
+                </li>
+              </ul>
+            </div>
+        </div>
+    </div>
+ 
+    {%include 'app_manager/add_app_modal.html' %}
+    {%include 'app_manager/delete_app_modal.html' %}
+
+    {%endblock%}
+
