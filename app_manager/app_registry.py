@@ -23,7 +23,7 @@ class AppInterface(object):
     def __init__(self):
 
         self.app_registry = AppRegistry()
-        self.job_queue = JobQueue(config.get('plugin', 'queue_directory', None))
+        self.job_queue = JobQueue(config.get('plugin', 'queue_directory', '/tmp'))
         self.job_queue.rebuild()
 
     def installed_apps_as_dict(self):
@@ -55,6 +55,7 @@ class AppInterface(object):
         if job_id is not None:
             if job_id in self.job_queue.jobs.keys():
                 return [dict(jobid=job_id,
+                             app_id=self.job_queue.jobs[job_id].app_id,
                              status=self.job_queue.jobs[job_id].status)]
             else:
                 return []
@@ -73,7 +74,7 @@ class AppInterface(object):
 
             response = []
             for job in matching_jobs:
-                response.append(dict(jobid=job.id, status=job.status))
+                response.append(dict(app_id=job.app_id, jobid=job.id, status=job.status))
             return response
 
 
@@ -297,13 +298,15 @@ class JobQueue(object):
 
         with open(os.path.join(self.root, self.folders['queued'], job.file), 'w') \
                 as jobfile:
-            jobfile.write('\n'.join(["%s owner=%s" % (self.commentstr,
-                                                      job.owner),
-                                     "%s network_id=%s" % (self.commentstr,
+            jobfile.write('\n'.join(["%s owner=%s"       % (self.commentstr,
+                                                           job.owner),
+                                     "%s app_id=%s"      % (self.commentstr,
+                                                           job.app.id),
+                                     "%s network_id=%s"  % (self.commentstr,
                                                            job.network_id),
                                      "%s scenario_id=%s" % (self.commentstr,
                                                             job.scenario_id),
-                                     "%s created_at=%s" % (self.commentstr,
+                                     "%s created_at=%s"  % (self.commentstr,
                                                            job.created_at),
                                      "%s enqueued_at=%s" % (self.commentstr,
                                                             job.enqueued_at),
@@ -342,6 +345,7 @@ class Job(object):
     def __init__(self):
         self.id = None
         self.app = None
+        self.app_id=None
         self.owner = None
         self.network_id = None
         self.scenario_id = None
@@ -354,6 +358,7 @@ class Job(object):
     def create(self, app, network_id, scenario_id, owner, options):
         self.id = str(uuid.uuid4())
         self.app = app
+        self.app_id=app.id
         self.owner = owner
         self.network_id = network_id
         self.scenario_id = scenario_id
@@ -375,6 +380,8 @@ class Job(object):
             if line.startswith('#') or line.startswith('rem'):
                 if 'owner' in line:
                     self.owner = line.split('=')[-1]
+                elif 'app_id' in line:
+                    self.app_id = line.split('=')[-1]
                 elif 'network_id' in line:
                     self.network_id = int(line.split('=')[-1])
                 elif 'scenario_id' in line:

@@ -1,0 +1,30 @@
+<script src="{{url_for('app_manager.static', filename='js/apps.js')}}"></script>
+<script>
+    var get_app_details_url = "{{url_for('app_manager.get_app_info')}}"
+    var run_app_url = "{{url_for('app_manager.run_app')}}"
+    var job_status_url = "{{url_for('app_manager.job_status')}}"
+    var uid = {{session['user_id']}}
+</script>
+<div class="modal fade" tabindex="-1" role="dialog" id="run_app_modal">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title"></h4>
+      </div>
+      <div class="modal-body">
+          <form id="run-app" action="upload_app" method="POST" enctype=multipart/form-data>
+            <input type='hidden' name='app-id'></input>
+            <table id='app-params' class="table">
+            </table>
+          </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="close-run-app-button" class="btn btn-default" data-dismiss="modal">Close</button>
+        <button type="button" id="run-app-button" class="btn btn-success">Run</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+
