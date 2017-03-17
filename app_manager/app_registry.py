@@ -46,8 +46,8 @@ class AppInterface(object):
     def run_app(self, app_id, network_id, scenario_id, user, options={}):
         app = self.app_registry.installed_apps[app_id]
         appjob = Job()
-        appjob.create(app, network_id, scenario_id, str(user), options)
-        self.job_queue.enqueue(appjob)
+        appjob.create(app, app_id, network_id, scenario_id, str(user), options)
+        self.job_queue.enqueue(app_id, appjob)
         return dict(jobid=appjob.id)
 
     def get_status(self, network_id=None, user_id=None, job_id=None):
@@ -77,6 +77,12 @@ class AppInterface(object):
                 response.append(dict(app_id=job.app_id, jobid=job.id, status=job.status))
             return response
 
+    def get_job_details(self, job_id):
+        "Return the status of matching jobs."
+        if job_id in self.job_queue.jobs.keys():
+            return self.job_queue.jobs[job_id].get_details()
+        else:
+            return {}
 
 class AppRegistry(object):
     """A class holding all necessary information about installed Apps. Each App
@@ -123,7 +129,7 @@ class App(object):
         """
         pass
 
-    def cli_command(self, network_id, scenario_id, options):
+    def cli_command(self, app_id, network_id, scenario_id, options):
         """Generate a command line command based on the network and scenario ids
         and a given set of options.
         """
@@ -259,6 +265,7 @@ class JobQueue(object):
     running/
     finished/
     failed/
+    logs/
     
     Each job is a separate file containing the commandline to be executed. The
     filename and the job ID are identical.
@@ -278,6 +285,7 @@ class JobQueue(object):
                         'running': 'running',
                         'finished': 'finished',
                         'failed':  'failed',
+                        'logs'  : 'logs'
                         }
 
         # Create folder structure if necessary
@@ -291,17 +299,24 @@ class JobQueue(object):
             self.commentstr = 'rem'
         self.jobs = dict()
 
-    def enqueue(self, job):
+    def enqueue(self, app_id, job):
         job.enqueued_at = datetime.now()
         job.job_queue = self
         self.jobs[job.id] = job
+
+        stderr = os.path.join(self.root, self.folders['logs'], "%s.log"%job.id)
+        stdout = os.path.join(self.root, self.folders['logs'], "%s.out"%job.id)
+        
+        #Better way to do this? 
+        job.logfile = stderr
+        job.outfile = stdout
 
         with open(os.path.join(self.root, self.folders['queued'], job.file), 'w') \
                 as jobfile:
             jobfile.write('\n'.join(["%s owner=%s"       % (self.commentstr,
                                                            job.owner),
                                      "%s app_id=%s"      % (self.commentstr,
-                                                           job.app.id),
+                                                           job.app_id),
                                      "%s network_id=%s"  % (self.commentstr,
                                                            job.network_id),
                                      "%s scenario_id=%s" % (self.commentstr,
@@ -311,19 +326,28 @@ class JobQueue(object):
                                      "%s enqueued_at=%s" % (self.commentstr,
                                                             job.enqueued_at),
                                      "\n"]))
-            jobfile.write(job.command)
+            
+            cmd_with_outputs = job.command + ' 2> %s 1>%s' % (stderr, stdout)
+            jobfile.write(cmd_with_outputs)
+
+
             jobfile.write('\n')
 
     def rebuild(self):
         """Rebuild job queue after server restart.
         """
         for folder in self.folders.values():
+            if folder == 'logs':
+                continue
             for jr, jf, jobfiles in os.walk(os.path.join(self.root, folder)):
                 for jfile in jobfiles:
                     exjob = Job()
                     exjob.from_file(os.path.join(jr, jfile))
                     exjob.job_queue = self
                     self.jobs[exjob.id] = exjob
+                    exjob.logfile = os.path.join(self.root, self.folders['logs'], "%s.log"%exjob.id)
+                    exjob.outfile = os.path.join(self.root, self.folders['logs'], "%s.out"%exjob.id)
+
 
     def expunge_old_jobs(self):
         """Delete finished job from list as it reaches a certain age.
@@ -355,26 +379,27 @@ class Job(object):
         self.job_queue = None
         self.enqueued_at = None
 
-    def create(self, app, network_id, scenario_id, owner, options):
+    def create(self, app, app_id, network_id, scenario_id, owner, options):
         self.id = str(uuid.uuid4())
         self.app = app
-        self.app_id=app.id
+        self.app_id=app_id
         self.owner = owner
         self.network_id = network_id
         self.scenario_id = scenario_id
-        self.command = app.cli_command(network_id, scenario_id, options)
+        self.command = app.cli_command(app_id, network_id, scenario_id, options)
         self.file = '.'.join([self.id, 'job'])
         self.created_at = datetime.now()
 
     def from_file(self, jobfile):
-        """Reconstruct Job object from a file in the job queue folder.
+        """
+            Reconstruct Job object from a file in the job queue folder.
         """
 
         self.file = os.path.basename(jobfile)
         self.id = self.file.split('.')[0]
         with open(jobfile, 'r') as jf:
             jobdata = jf.read()
-
+        
         jobdata = jobdata.split('\n')
         for line in jobdata:
             if line.startswith('#') or line.startswith('rem'):
@@ -392,6 +417,52 @@ class Job(object):
                     self.enqueued_at = date_parser.parse(line.split('=')[-1])
             elif len(line) > 0:
                 self.command = line
+
+    def get_details(self):
+        """
+            Get logs, output text and progress of the job
+        """
+        logs = self.get_logs()
+        output = self.get_output()
+        progress = self.get_progress()
+
+        return {'progress':progress, 'output':output, 'logs':logs}
+
+    def get_logs(self, limit=100):
+        """
+            Get the log output. Limit to 100 lines to save time.
+        """
+        logs = []
+        with open(self.logfile, 'r') as f:
+            if limit is not None:
+                return f.readlines()[0:limit]
+            else:
+                return f.readlines()
+
+    def get_output(self):
+        output = []
+        with open(self.outfile, 'r') as f:
+            for line in f.readlines():
+                line = line.strip()
+                if line.startswith("!!Output"):
+                    line = line.replace('!!Output ', '')
+                    output.append(line)
+        return  output
+
+    def get_progress(self):
+        progress=0
+        total = None
+        with open(self.outfile, 'r') as f:
+            for line in f.readlines():
+                line = line.strip()
+                if line.startswith("!!Progress"):
+                    line = line.replace('!!Progress', '')
+                    line = line.split('/')
+                    if len(line) == 2:
+                        progress = int(line[0])
+                        if total == None:
+                            total = int(line[1])
+        return  progress, total
 
     @property
     def status(self):
@@ -447,6 +518,11 @@ def scan_installed_apps(plugin_path):
 
     return installed_apps
 
+def _strip_lines (output):
+    new_output=[]
+    for line in output:
+        new_output.append(line.strip())
+    return new_output
 
 # for testing only
 if __name__ == '__main__':

@@ -133,3 +133,19 @@ def job_status():
                                 job_id=parameters.get('job_id', None))
 
     return jsonify(status)
+
+@appmanager.route('/app/details/<job_id>', methods=['GET'])
+@appmanager.route('/app/details/', methods=['POST'])
+def job_details(job_id):
+    """Get the full details for a job, taken from the appropriate log file and output.
+    """
+    
+    if job_id is None:
+        parameters = json.loads(request.get_data())
+        job_id = parameters['job_id']
+
+    log.info('Getting details for job for: %s', job_id )
+
+    details = appinterface.get_job_details(job_id)
+
+    return jsonify(details)

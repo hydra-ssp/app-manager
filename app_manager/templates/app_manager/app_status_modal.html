@@ -1,0 +1,41 @@
+<!-- Modal -->
+<div id="app_status_modal" class="modal fade" role="dialog">
+    <div class="modal-dialog" role="document">
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title"></h4>
+            </div><!--modal header-->
+            <div class='modal-body'>
+                <h4>Information</h4>
+                <div>
+                    <strong>Status:</strong>
+                    <span id="app_status"  style="margin: 15px;"></span>
+                </div>
+                <div>
+                    <strong>Job ID:</strong>
+                    <span id="job_id_container"  style="margin: 15px;"></span>
+                </div>
+                <div>
+                    <strong>Message</strong>
+                    <span id="job_message" style="margin: 15px;"></span>
+                </div>
+                <div id='job_id_container'></div>
+                <h4>Progress</h4>
+                <div id="app_progressbar"  style="margin: 15px;">
+                    <div class="progress">
+                    </div>
+                </div><!--app_progressbar-->
+                <h4 >Logs</h4>
+                <div id="app_logs">
+                </div><!--app_logs-->
+            </div> <!--modal body -->
+            <div class="modal-footer">
+                    <button type="button" id="close-app-status-button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div><!--modal content-->
+    </div><!-- modal dialog-->
+</div><!--modal-->
+
+
