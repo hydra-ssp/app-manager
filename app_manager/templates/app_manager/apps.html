@@ -4,9 +4,7 @@
 {% block content %}
   <meta content="text/html; charset=UTF-8" http-equiv="content-type"/>
 
-  <script src="{{url_for('app_manager.static', filename='js/manage.js')}}"></script>
   <script>
-    var upload_url = "{{url_for('app_manager.do_upload_app')}}"
     var delete_app_url = "{{url_for('app_manager.do_delete_app')}}"
   </script>
 
@@ -45,6 +43,15 @@
  
     {%include 'app_manager/add_app_modal.html' %}
     {%include 'app_manager/delete_app_modal.html' %}
+
+    <script>
+        /*****************Management of Apps***********************/
+        $(document).on('click', '#create-app-button', function(){
+    
+            $('#create-app').submit()
+
+        })
+    </script>
 
     {%endblock%}
 

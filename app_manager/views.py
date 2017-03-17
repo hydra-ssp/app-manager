@@ -99,11 +99,22 @@ def run_app():
 
     log.info('Running App %s with parameters %s' , parameters['id'], parameters)
  
-    job_id = appinterface.run_app(parameters['id'],
+    import pudb; pudb.set_trace()
+    if isinstance(parameters['scenario_id'], list):
+        for s_id in parameters['scenario_id']:
+            job_id = appinterface.run_app(parameters['id'],
+                                  parameters['network_id'],
+                                  s_id,
+                                  session['user_id'],
+                                  options=parameters['options'])
+
+    else:
+        job_id = appinterface.run_app(parameters['id'],
                                   parameters['network_id'],
                                   parameters['scenario_id'],
                                   session['user_id'],
                                   options=parameters['options'])
+
     return jsonify(job_id)
 
 @appmanager.route('/app/status', methods=['POST'])

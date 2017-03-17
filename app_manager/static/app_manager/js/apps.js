@@ -1,11 +1,5 @@
 var jobs = {}
 
-/*****************Management of Apps***********************/
-$(document).on('click', '#create-app-button', function(){
-
-    $('#create-app').submit()
-
-})
 
 /*********************Parameterising Apps******************************/
 
@@ -52,49 +46,14 @@ var populate_params = function(app_id, params){
     var switches = params['switches']
     for (var i=0; i<mandatory.length; i++){
         var param = mandatory[i];
-        var inputtype = 'number'
-        if (param.argtype == 'string'){
-            inputtype = 'text'
-        }else if(param.argtype == 'file'){
-            inputtype = 'file'
-        }
-        var val = ''
-        if (param.defaultval != null){
-            val = param.defaultval
-        }
-
-        if (param.name == 'network-id' || param.name == 'network_id'){
-            val =network_id 
-        }
-
-        if (param.name == 'scenario-id' || param.name == 'scenario_id'){
-            val = scenario_id
-        }
-
-        table.append("<tr><td>"+param.name+"*</td><td><input name='"+param.name+"' value='"+val+"' type='"+inputtype+"'></input></td></tr>");
+        var row_text = get_param_row(param)
+        table.append(row_text)
     }
     for (var i=0; i<optional.length; i++){
         var param = optional[i];
-        var inputtype = 'number'
-        if (param.argtype == 'string'){
-            inputtype = 'text'
-        }else if(param.argtype == 'file'){
-            inputtype = 'file'
-        }
-        var val = ''
-        if (param.defaultval != null){
-            val = param.defaultval
-        }
 
-        if (param.name == 'network-id' || param.name == 'network_id'){
-            val =network_id 
-        }
-
-        if (param.name == 'scenario-id' || param.name == 'scenario_id'){
-            val = scenario_id
-        }
-
-        table.append("<tr><td>"+param.name+"</td><td><input name='"+param.name+"' value='"+val+"' type='"+inputtype+"'></input></td></tr>");
+        var row_text = get_param_row(param)
+        table.append(row_text)
     }
     for (var i=0; i<switches.length; i++){
         var param = switches[i];
@@ -104,8 +63,50 @@ var populate_params = function(app_id, params){
         }
         table.append("<tr><td>"+param.name+"</td><td><input name='"+param.name+"' type='checkbox'></input></td></tr>");
     }
+
+    $('.selectpicker', table).selectpicker({
+        style: 'btn-default',
+        size: 4
+    });
 }
 
+var get_param_row = function(param){
+    var inputtype = 'number'
+    if (param.argtype == 'string'){
+        inputtype = 'text'
+    }else if(param.argtype == 'file'){
+        inputtype = 'file'
+    }
+
+    var val = ''
+    if (param.defaultval != null){
+        val = param.defaultval
+    }
+
+
+    if (param.name == 'network-id' || param.name == 'network_id' || param.name == 'session_id' || param.name=='session-id' || param.name == 'server-url' || param.name == 'server_url'){
+        val =network_id 
+        var input = "<input name='"+param.name+"' value='"+val+"' type='hidden'></input>";
+        row_text = input
+    }
+
+    else if (param.type == 'scenario' || param.name == 'scenario-id' || param.name == 'scenario_id'){
+        val = "<select name='"+param.name+"' multiple class='selectpicker'>"
+        Object.keys(scenario_name_lookup).forEach(function(k){
+            val = val + "<option val='"+k+"'>"+scenario_name_lookup[k]+"</option>"
+        })
+        val = val + "</select>"
+        var input = val 
+        row_text = "<tr><td>"+param.name+"</td><td>"+input+"</td></tr>"
+    }else{
+        var input = "<input name='"+param.name+"' value='"+val+"' type='"+inputtype+"'></input>";
+        row_text = "<tr><td>"+param.name+"</td><td>"+input+"</td></tr>"
+    }
+
+
+    return row_text 
+
+}
 
 /*********************Running Apps******************************/
 $(document).on('click', '#run-app-button', function(){
@@ -139,8 +140,12 @@ $(document).on('click', '#run-app-button', function(){
         var value = data[i].value;
         if (name == 'app-id' || name == 'app_id'){
             params['id'] = value;
-        }else if (name == 'scenario-id' || name == 'scenario_id'){
-            params['scenario_id'] = value;
+        }else if (name == 'scenario' || name == 'scenario-id' || name == 'scenario_id'){
+            if (params['scenario_id'] == undefined){
+                params['scenario_id'] = [value];
+            }else{
+                params['scenario_id'].push(value);
+            }
         }else if (name == 'network-id' || name == 'network_id'){
             params['network_id'] = value;
         }else{

@@ -11,7 +11,7 @@
               <br>
               Make sure you upload only files from trustworthy sources.
           </div>
-          <form id="create-app" action="upload_app" method="POST" enctype=multipart/form-data>
+          <form id="create-app" url=""{{url_for('app_manager.do_upload_app')}}"" action="upload_app" method="POST" enctype=multipart/form-data>
             <table class="table">
             <tr>
                 <td><label for="app-file-input">Find ZIP FIle</label></td>
