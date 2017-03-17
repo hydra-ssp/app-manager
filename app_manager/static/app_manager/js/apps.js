@@ -243,7 +243,7 @@ var update_job_details = function(details){
     }
 
     if (progress != undefined){
-        var prog = progress[0]/progress[1]
+        var prog = progress[0]/progress[1] * 100
         $('#app_progressbar .progress').append('<div class="progress-bar progress-bar-striped active" id="app_status_progress_bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: '+prog+'%"></div>')
     }else{
         $('#app_progressbar').append("<div class='alert alert-info'>No progress available</div>")
