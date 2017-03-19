@@ -99,7 +99,6 @@ def run_app():
 
     log.info('Running App %s with parameters %s' , parameters['id'], parameters)
  
-    import pudb; pudb.set_trace()
     if isinstance(parameters['scenario_id'], list):
         for s_id in parameters['scenario_id']:
             job_id = appinterface.run_app(parameters['id'],
