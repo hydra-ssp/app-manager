@@ -83,26 +83,48 @@ var get_param_row = function(param){
         val = param.defaultval
     }
 
+    var current_scen = scenario_summaries[scenario_id]
 
-    if (param.name == 'network-id' || param.name == 'network_id' || param.name == 'session_id' || param.name=='session-id' || param.name == 'server-url' || param.name == 'server_url'){
+    row_text = null;
+
+     //Depending on the type of input specified, display an appropriate input (or indeed hide the inpyt if it's not necessary)
+    if (param.argtype == 'network'){
         val =network_id 
         var input = "<input name='"+param.name+"' value='"+val+"' type='hidden'></input>";
-        row_text = input
-    }
-
-    else if (param.type == 'scenario' || param.name == 'scenario-id' || param.name == 'scenario_id'){
+        row_text = "<tr class='hidden'><td>"+param.name+"</td><td>"+input+"</td></tr>"
+    }else if (param.name == 'session_id' || param.name=='session-id' || param.name == 'server-url' || param.name == 'server_url'){
+        var input = "<input name='"+param.name+"' value='' type='hidden'></input>";
+        row_text = "<tr class='hidden'><td>"+param.name+"</td><td>"+input+"</td></tr>"
+    }else if (param.argtype == 'scenario'){
         val = "<select name='"+param.name+"' multiple class='selectpicker'>"
         Object.keys(scenario_name_lookup).forEach(function(k){
-            val = val + "<option val='"+k+"'>"+scenario_name_lookup[k]+"</option>"
+            val = val + "<option value='"+k+"' "+((k==scenario_id) ? 'selected' : '')+">"+scenario_name_lookup[k]+"</option>"
         })
         val = val + "</select>"
         var input = val 
         row_text = "<tr><td>"+param.name+"</td><td>"+input+"</td></tr>"
-    }else{
+    }else if (param.argtype == 'starttime'){
+        if (current_scen.start_time != undefined && current_scen.start_time != null){ 
+            var input = "<input name='"+param.name+"' value='"+current_scen.start_time+"' type='date'></input>";
+            row_text = "<tr><td>"+param.name+"</td><td>"+input+"</td></tr>"
+        }
+    }else if (param.argtype == 'endtime'){
+        if (current_scen.end_time != undefined && current_scen.end_time != null){ 
+            var input = "<input name='"+param.name+"' value='"+current_scen.end_time+"' type='date'></input>";
+            row_text = "<tr><td>"+param.name+"</td><td>"+input+"</td></tr>"
+        }
+    }else if (param.argtype == 'timestep'){
+        if (current_scen.time_step != undefined && current_scen.time_step != null){ 
+            var input = "<input name='"+param.name+"' value='"+current_scen.time_step+"' type='text'></input>";
+            row_text = "<tr><td>"+param.name+"</td><td>"+input+"</td></tr>"
+        }
+    }
+
+    //Not created by a special case? Then use a default
+    if (row_text == null){
         var input = "<input name='"+param.name+"' value='"+val+"' type='"+inputtype+"'></input>";
         row_text = "<tr><td>"+param.name+"</td><td>"+input+"</td></tr>"
     }
-
 
     return row_text 
 
@@ -130,33 +152,14 @@ $(document).on('click', '#run-app-button', function(){
      'options': {'option1': value1, 'option2': value2, ... }
      }*/
     
-    var form = $('#run-app')
-
-    var data = form.serializeArray()
-    var params = {id: null, scenario_id: null, network_id: null, options:{}}
-
-    for (var i=0; i<data.length; i++){
-        var name = data[i].name;
-        var value = data[i].value;
-        if (name == 'app-id' || name == 'app_id'){
-            params['id'] = value;
-        }else if (name == 'scenario' || name == 'scenario-id' || name == 'scenario_id'){
-            if (params['scenario_id'] == undefined){
-                params['scenario_id'] = [value];
-            }else{
-                params['scenario_id'].push(value);
-            }
-        }else if (name == 'network-id' || name == 'network_id'){
-            params['network_id'] = value;
-        }else{
-            params['options'][name] = value;
-        }
-    }
-
+    var form_data = new FormData($('#run-app')[0]);
     $.ajax({
         method: 'POST',
         url: run_app_url,
-        data: JSON.stringify(params),
+        data: form_data,
+        contentType: false,
+        cache: false,
+        processData: false,
         success: success,
         error: error
         

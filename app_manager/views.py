@@ -5,9 +5,12 @@ import zipfile
 import os
 import json
 
-from app_utilities import get_progress_from_output, check_process_output
 
-from app_registry import AppInterface, AppRegistry
+from werkzeug import secure_filename
+
+import datetime
+
+from app_registry import AppInterface
 appinterface = AppInterface()
 
 import logging
@@ -24,7 +27,7 @@ def go_apps():
 def go_app(app_id):
     # Do some stuff
     app_info = appinterface.app_info(app_id)
-    return render_template('app_manager/app.html', apps=[])
+    return render_template('app_manager/app.html', app=app_info)
 
 @appmanager.route('/apps/upload_app', methods=['POST'])
 def do_upload_app():
@@ -95,7 +98,12 @@ def run_app():
     of an app.
     """
 
-    parameters = json.loads(request.get_data())
+    try:
+        parameters = json.loads(request.get_data())
+        if parameters.get('options') == None:
+            raise Exception('Parameters not in expected format')
+    except:
+        parameters = _parse_args(request.values, request.files)
 
     log.info('Running App %s with parameters %s' , parameters['id'], parameters)
  
@@ -115,6 +123,41 @@ def run_app():
                                   options=parameters['options'])
 
     return jsonify(job_id)
+
+def _parse_args(args, files):
+    params = {
+        'options': {} 
+    }
+    for k, v in args.items():
+        if v.strip() == '':
+            log.info('Ignoring %s with empty value', k)
+            continue
+
+        k = k.lower()
+        if k in ('app_id', 'app-id', 'id'):
+            params['id'] = v
+        elif k.find('network') == 0:
+            params['network_id'] = v
+        elif k.find('scenario') == 0:
+            params['scenario_id'] = v
+        else:
+            params['options'][k] = v
+
+    for k, v in files.items():
+        if v.filename == '':
+            log.info('Ignoring %s with empty value', k)
+        else:
+            log.info('Adding file %s to parameters'%k)
+            filename = secure_filename(v.filename)
+
+            now = datetime.datetime.now().strftime("%d%m%y%H%M%S")
+            
+            uploaded_file = os.path.join(appinterface.upload_dir, now+'_'+filename)
+            v.save(uploaded_file)
+
+            params['options'][k] = uploaded_file
+            
+    return params
 
 @appmanager.route('/app/status', methods=['POST'])
 def job_status():

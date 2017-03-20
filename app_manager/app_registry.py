@@ -1,11 +1,9 @@
 import os
 import sys
 import glob
-import time
 import uuid
 import logging
 import hashlib
-import subprocess
 
 from lxml import etree
 from datetime import datetime
@@ -25,6 +23,7 @@ class AppInterface(object):
         self.app_registry = AppRegistry()
         self.job_queue = JobQueue(config.get('plugin', 'queue_directory', '/tmp'))
         self.job_queue.rebuild()
+        self.upload_dir = config.get('plugin', 'upload_dir', '/tmp/uploads')
 
     def installed_apps_as_dict(self):
         """Return a list if installed apps as dict.
@@ -157,7 +156,7 @@ class App(object):
 
             if opt_switch is not None:
                 command_elements.append(opt_switch)
-                command_elements.append(str(val))
+                command_elements.append("'%s'"%(val))
 
         return ' '.join(command_elements)
 
@@ -281,11 +280,12 @@ class JobQueue(object):
             log.debug('Creating folder %s.' % self.root)
             os.mkdir(self.root)
 
-        self.folders = {'queued': 'queued',
-                        'running': 'running',
-                        'finished': 'finished',
-                        'failed':  'failed',
-                        'logs'  : 'logs'
+        self.folders = {'queued'   : 'queued',
+                        'running'  : 'running',
+                        'finished' : 'finished',
+                        'failed'   : 'failed',
+                        'logs'     : 'logs',
+                        'uploads'  : 'uploads'
                         }
 
         # Create folder structure if necessary
@@ -337,7 +337,7 @@ class JobQueue(object):
         """Rebuild job queue after server restart.
         """
         for folder in self.folders.values():
-            if folder == 'logs':
+            if folder in ('logs', 'uploads'):
                 continue
             for jr, jf, jobfiles in os.walk(os.path.join(self.root, folder)):
                 for jfile in jobfiles:
@@ -505,7 +505,7 @@ def scan_installed_apps(plugin_path):
     """
 
     plugin_files = []
-    for proot, pfolders, pfiles in os.walk(plugin_path):
+    for proot, pfolders, pfiles in os.walk(plugin_path, followlinks=True):
         for item in pfiles:
             if item == 'plugin.xml':
                 plugin_files.append(os.path.join(proot, item))
