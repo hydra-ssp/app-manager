@@ -92,17 +92,30 @@ var get_param_row = function(param){
         val =network_id 
         var input = "<input name='"+param.name+"' value='"+val+"' type='hidden'></input>";
         row_text = "<tr class='hidden'><td>"+param.name+"</td><td>"+input+"</td></tr>"
-    }else if (param.name == 'session_id' || param.name=='session-id' || param.name == 'server-url' || param.name == 'server_url'){
+    }else if (param.name == 'session_id' || param.name == 'session-id'){
+        
+        if (session_id != undefined){
+            var val = session_id;
+        }else{
+            var val = '';
+        }
         var input = "<input name='"+param.name+"' value='' type='hidden'></input>";
-        row_text = "<tr class='hidden'><td>"+param.name+"</td><td>"+input+"</td></tr>"
+        row_text = "<tr class='hidden'><td>"+param.name+"</td><td>"+input+"</td></tr>";
+
+    }else if (param.name == 'server-url' || param.name == 'server_url'){
+        
+        var val = window.location.origin;
+        var input = "<input name='"+param.name+"' value='"+val+"' type='hidden'></input>";
+        row_text = "<tr class='hidden'><td>"+param.name+"</td><td>"+input+"</td></tr>";
+
     }else if (param.argtype == 'scenario'){
-        val = "<select name='"+param.name+"' multiple class='selectpicker'>"
+        val = "<select name='"+param.name+"' multiple class='selectpicker'>";
         Object.keys(scenario_name_lookup).forEach(function(k){
-            val = val + "<option value='"+k+"' "+((k==scenario_id) ? 'selected' : '')+">"+scenario_name_lookup[k]+"</option>"
+            val = val + "<option value='"+k+"' "+((k==scenario_id) ? 'selected' : '')+">"+scenario_name_lookup[k]+"</option>";
         })
-        val = val + "</select>"
-        var input = val 
-        row_text = "<tr><td>"+param.name+"</td><td>"+input+"</td></tr>"
+        val = val + "</select>";
+        var input = val;
+        row_text = "<tr><td>"+param.name+"</td><td>"+input+"</td></tr>";
     }else if (param.argtype == 'starttime'){
         if (current_scen.start_time != undefined && current_scen.start_time != null){ 
             var input = "<input name='"+param.name+"' value='"+current_scen.start_time+"' type='date'></input>";
