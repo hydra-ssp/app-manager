@@ -188,7 +188,8 @@ def job_status():
     return jsonify(status)
 
 @appmanager.route('/app/details/<job_id>', methods=['GET'])
-@appmanager.route('/app/details/', methods=['POST'])
+@appmanager.route('/job/<job_id>',         methods=['GET'])
+@appmanager.route('/app/details/',         methods=['POST'])
 def job_details(job_id):
     """Get the full details for a job, taken from the appropriate log file and output.
     """
@@ -202,3 +203,38 @@ def job_details(job_id):
     details = appinterface.get_job_details(job_id)
 
     return jsonify(details)
+
+@appmanager.route('/job/delete/<job_id>', methods=['GET' ])
+@appmanager.route('/job/delete/',         methods=['POST'])
+def delete_job(job_id):
+    """
+        Delete a job by removing it from the queued / finished / failed directory
+        return 'OK' if successfull or throw an exception if failed.
+    """
+    if job_id is None:
+        parameters = json.loads(request.get_data())
+        job_id = parameters['job_id']
+    
+    log.info('Deleting job %s', job_id)
+    
+    appinterface.delete_job(job_id)
+
+    return 'OK'
+
+@appmanager.route('/job/restart/<job_id>', methods=['GET' ])
+@appmanager.route('/job/restart/',         methods=['POST'])
+def restart_job(job_id):
+    """
+        Restart a job by removing it from the finished / failed directory 
+        to the queued directory.
+        return 'OK' if successfull or throw an exception if failed.
+    """
+    if job_id is None:
+        parameters = json.loads(request.get_data())
+        job_id = parameters['job_id']
+    
+    log.info('Restarting job %s', job_id)
+    
+    appinterface.restart_job(job_id)
+
+    return 'OK'

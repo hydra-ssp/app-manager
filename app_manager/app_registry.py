@@ -83,6 +83,31 @@ class AppInterface(object):
         else:
             return {}
 
+    def delete_job(self, job_id):
+        """
+            Delete a job by removing it from the queued / finished / failed folder
+        """
+        if job_id not in self.job_queue.jobs:
+            raise Exception("Cannot delete job %s, Job not found."%job_id)
+
+        job = self.job_queue.jobs[job_id]
+        
+        job.delete()
+
+        del(self.job_queue.jobs[job_id])
+
+    def restart_job(self, job_id):
+        """
+            Restart a job by removing it from the finished / failed folder
+            to the queued folder
+        """
+        if job_id not in self.job_queue.jobs:
+            raise Exception("Cannot restart job %s, Job not found."%job_id)
+
+        job = self.job_queue.jobs[job_id]
+        
+        job.restart()
+
 class AppRegistry(object):
     """A class holding all necessary information about installed Apps. Each App
     needs to be install in a folder specified in the config file. An App is
@@ -265,6 +290,7 @@ class JobQueue(object):
     finished/
     failed/
     logs/
+    deleted/
     
     Each job is a separate file containing the commandline to be executed. The
     filename and the job ID are identical.
@@ -284,6 +310,7 @@ class JobQueue(object):
                         'running'  : 'running',
                         'finished' : 'finished',
                         'failed'   : 'failed',
+                        'deleted'  : 'deleted',
                         'logs'     : 'logs',
                         'uploads'  : 'uploads'
                         }
@@ -333,11 +360,13 @@ class JobQueue(object):
 
             jobfile.write('\n')
 
+            job.path = self.folders['queued']
+
     def rebuild(self):
         """Rebuild job queue after server restart.
         """
         for folder in self.folders.values():
-            if folder in ('logs', 'uploads'):
+            if folder in ('logs', 'uploads', 'deleted'):
                 continue
             for jr, jf, jobfiles in os.walk(os.path.join(self.root, folder)):
                 for jfile in jobfiles:
@@ -375,6 +404,7 @@ class Job(object):
         self.scenario_id = None
         self.command = None
         self.file = None
+        self.path = None
         self.created_at = None
         self.job_queue = None
         self.enqueued_at = None
@@ -390,12 +420,39 @@ class Job(object):
         self.file = '.'.join([self.id, 'job'])
         self.created_at = datetime.now()
 
+    def delete(self):
+        """
+            Delete a job object
+        """
+        
+        jobfile = os.path.basename(self.file)
+
+        fullpath = os.path.join(self.path, self.file)
+        delpath = os.path.join(self.path, os.path.pardir, 'deleted')
+
+        log.info("Moving job %s to deleted folder", jobfile)
+        os.rename(fullpath, os.path.join(delpath, jobfile))
+
+    def restart(self):
+        """
+            Restart a job object
+        """
+        
+        jobfile = os.path.basename(self.file)
+
+        fullpath = os.path.join(self.path, self.file)
+        delpath = os.path.join(self.path, os.path.pardir, 'queued')
+
+        log.info("Moving job %s to queued folder", jobfile)
+        os.rename(fullpath, os.path.join(delpath, jobfile))
+
     def from_file(self, jobfile):
         """
             Reconstruct Job object from a file in the job queue folder.
         """
 
         self.file = os.path.basename(jobfile)
+        self.path = os.path.dirname(jobfile)
         self.id = self.file.split('.')[0]
         with open(jobfile, 'r') as jf:
             jobdata = jf.read()

@@ -201,8 +201,10 @@ var poll_jobs = function(repeat){
                     icon = 'fa fa-check'
                 }else if (j.status == 'failed'){
                     icon = 'fa fa-exclamation-circle'
+                }else{
+                    icon = 'fa fa-questionmark'
                 }
-                $('#joblist').append("<button class='btn jobstatus "+j.status+"' data-toggle='modal' data-target='#app_status_modal' job-id='"+j.jobid+"' app-id='"+j.app_id+"'>"+app_dict[j.app_id]['name']+"<span class='icon'><i class='"+icon+"'></i></span></button>")
+                $('#joblist').append("<div class='btn jobstatus "+j.status+"' data-toggle='modal' data-target='#app_status_modal' job-id='"+j.jobid+"' app-id='"+j.app_id+"'>"+app_dict[j.app_id]['name']+"<span class='icon'><i class='"+icon+"'></i></span><span class='inner-button'><i class='delete-job icon fa fa-trash'></i></span><span class='inner-button'><i class='restart-job icon fa fa-refresh'></i></span></div>")
             }
             if (repeat==undefined || repeat == true){
                 setTimeout(poll_jobs, 5000) // 5 Seconds when there are active jobs
@@ -216,7 +218,7 @@ var poll_jobs = function(repeat){
         {
             method: 'POST',
             url: job_status_url,
-            data: JSON.stringify({user_id: uid}),
+            data: JSON.stringify({user_id: uid, network_id:network_id}),
             success: success,
             error: error,
         }
@@ -249,6 +251,26 @@ $(document).on('click', '#joblist .jobstatus', function(){
     $('#app_logs').empty()
    
     get_job_details(job_id)
+ 
+})
+
+$(document).on('click', '#joblist .delete-job', function(event){
+    
+    event.stopPropagation()
+
+    var job_id = $(this).closest('.jobstatus').attr('job-id')
+
+    delete_job(job_id)
+ 
+})
+
+$(document).on('click', '#joblist .restart-job', function(event){
+    
+    event.stopPropagation()
+
+    var job_id = $(this).closest('.jobstatus').attr('job-id')
+
+    restart_job(job_id)
  
 })
 
@@ -292,6 +314,40 @@ var get_job_details = function(job_id){
     console.log(get_job_details_url + job_id)
     $.ajax({
         url: get_job_details_url + job_id,
+        method: 'GET',
+        success: success,
+        error: error,
+    })
+
+}
+
+var delete_job = function(job_id){
+    console.log('deleting job ' + job_id)
+    var success = function(resp){
+       $('.jobstatus[job-id="'+job_id+'"]').fadeOut(300, function(){$(this).remove();}); 
+    }
+    var error = function(resp){
+        alert('An error occurred while deleting job')
+    }
+    $.ajax({
+        url: delete_job_url + job_id,
+        method: 'GET',
+        success: success,
+        error: error,
+    })
+
+}
+
+var restart_job = function(job_id){
+    console.log('Restarting job ' + job_id)
+    var success = function(resp){
+        poll_jobs()
+    }
+    var error = function(resp){
+        alert('An error occurred while restarting job')
+    }
+    $.ajax({
+        url: restart_job_url + job_id,
         method: 'GET',
         success: success,
         error: error,
