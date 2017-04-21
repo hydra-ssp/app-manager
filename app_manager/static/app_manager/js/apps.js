@@ -204,7 +204,12 @@ var poll_jobs = function(repeat){
                 }else{
                     icon = 'fa fa-questionmark'
                 }
-                $('#joblist').append("<div class='btn jobstatus "+j.status+"' data-toggle='modal' data-target='#app_status_modal' job-id='"+j.jobid+"' app-id='"+j.app_id+"'>"+app_dict[j.app_id]['name']+"<span class='icon'><i class='"+icon+"'></i></span><span class='inner-button'><i class='delete-job icon fa fa-trash'></i></span><span class='inner-button'><i class='restart-job icon fa fa-refresh'></i></span></div>")
+
+                var name = j.scenario_name
+                if (name == '' || name == undefined || name == null){
+                    name = app_dict[j.app_id]['name'];
+                }
+                $('#joblist').append("<div class='btn jobstatus "+j.status+"' data-toggle='modal' data-target='#app_status_modal' scenario_id='"+j.scenario_id+"' job-id='"+j.jobid+"' app-id='"+j.app_id+"'><div class='name'>"+name+"</div><span class='icon'><i class='"+icon+"'></i></span><span class='inner-button'><i class='delete-job icon fa fa-trash'></i></span><span class='inner-button'><i class='restart-job icon fa fa-refresh'></i></span></div>")
             }
             if (repeat==undefined || repeat == true){
                 setTimeout(poll_jobs, 5000) // 5 Seconds when there are active jobs
@@ -224,6 +229,11 @@ var poll_jobs = function(repeat){
         }
     )
 }
+
+$(document).on('click', '#refresh-jobs', function(e){
+    e.stopPropagation()
+    poll_jobs(false)
+})
 
 $(document).on('click', '#joblist .jobstatus', function(){
 

@@ -42,10 +42,10 @@ class AppInterface(object):
     def app_info(self, app_id):
         return self.app_registry.installed_apps[app_id].info
 
-    def run_app(self, app_id, network_id, scenario_id, user, options={}):
+    def run_app(self, app_id, network_id, scenario_id, user, options={}, network_name='', scenario_name=''):
         app = self.app_registry.installed_apps[app_id]
         appjob = Job()
-        appjob.create(app, app_id, network_id, scenario_id, str(user), options)
+        appjob.create(app, app_id, network_id, scenario_id, str(user), options, scenario_name=scenario_name, network_name=network_name)
         self.job_queue.enqueue(app_id, appjob)
         return dict(jobid=appjob.id)
 
@@ -62,18 +62,18 @@ class AppInterface(object):
             matching_jobs = []
             for jid, job in self.job_queue.jobs.iteritems():
                 if network_id is not None and user_id is not None:
-                    if job.network_id == network_id and job.owner == str(user_id): 
+                    if int(job.network_id) == int(network_id) and int(job.owner) == int(user_id): 
                         matching_jobs.append(job)
                 elif network_id is not None:
-                    if job.network_id == network_id:
+                    if int(job.network_id) == int(network_id):
                         matching_jobs.append(job)
                 elif user_id is not None:
-                    if job.owner == str(user_id):
+                    if int(job.owner) == int(user_id):
                         matching_jobs.append(job)
 
             response = []
             for job in matching_jobs:
-                response.append(dict(app_id=job.app_id, jobid=job.id, status=job.status))
+                response.append(dict(scenario_id=job.scenario_id, network_id=job.network_id, owner=job.owner, app_id=job.app_id, jobid=job.id, status=job.status, scenario_name=job.scenario_name, network_name=job.network_name))
             return response
 
     def get_job_details(self, job_id):
@@ -346,8 +346,12 @@ class JobQueue(object):
                                                            job.app_id),
                                      "%s network_id=%s"  % (self.commentstr,
                                                            job.network_id),
+                                     "%s network_name=%s"% (self.commentstr,
+                                                           job.network_name),
                                      "%s scenario_id=%s" % (self.commentstr,
                                                             job.scenario_id),
+                                     "%s scenario_name=%s"%(self.commentstr,
+                                                            job.scenario_name),
                                      "%s created_at=%s"  % (self.commentstr,
                                                            job.created_at),
                                      "%s enqueued_at=%s" % (self.commentstr,
@@ -401,7 +405,9 @@ class Job(object):
         self.app_id=None
         self.owner = None
         self.network_id = None
+        self.network_name = None
         self.scenario_id = None
+        self.scenario_name = None
         self.command = None
         self.file = None
         self.path = None
@@ -409,13 +415,15 @@ class Job(object):
         self.job_queue = None
         self.enqueued_at = None
 
-    def create(self, app, app_id, network_id, scenario_id, owner, options):
+    def create(self, app, app_id, network_id, scenario_id, owner, options, network_name="", scenario_name=""):
         self.id = str(uuid.uuid4())
         self.app = app
         self.app_id=app_id
         self.owner = owner
         self.network_id = network_id
+        self.network_name = network_name
         self.scenario_id = scenario_id
+        self.scenario_name = scenario_name
         self.command = app.cli_command(app_id, network_id, scenario_id, options)
         self.file = '.'.join([self.id, 'job'])
         self.created_at = datetime.now()
@@ -468,6 +476,10 @@ class Job(object):
                     self.network_id = int(line.split('=')[-1])
                 elif 'scenario_id' in line:
                     self.scenario_id = int(line.split('=')[-1])
+                elif 'scenario_name' in line:
+                    self.scenario_name = line.split('=')[-1]
+                elif 'network_name' in line:
+                    self.network_name = line.split('=')[-1]
                 elif 'created_at' in line:
                     self.created_at = date_parser.parse(line.split('=')[-1])
                 elif 'enqueued_at' in line:

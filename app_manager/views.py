@@ -113,7 +113,10 @@ def run_app():
                                   parameters['network_id'],
                                   s_id,
                                   session['user_id'],
-                                  options=parameters['options'])
+                                  options=parameters['options'],
+                                  scenario_name=parameters.get('scenario_name'),
+                                  network_name=parameters.get('network_name')
+                                         )
 
     else:
         job_id = appinterface.run_app(parameters['id'],
