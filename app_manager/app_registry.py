@@ -51,6 +51,8 @@ class AppInterface(object):
 
     def get_status(self, network_id=None, user_id=None, job_id=None):
         "Return the status of matching jobs."
+
+        self.job_queue.rebuild()
         if job_id is not None:
             if job_id in self.job_queue.jobs.keys():
                 return [dict(jobid=job_id,
@@ -369,6 +371,7 @@ class JobQueue(object):
     def rebuild(self):
         """Rebuild job queue after server restart.
         """
+        self.jobs = dict()
         for folder in self.folders.values():
             if folder in ('logs', 'uploads', 'deleted'):
                 continue
@@ -438,7 +441,7 @@ class Job(object):
         fullpath = os.path.join(self.path, self.file)
         delpath = os.path.join(self.path, os.path.pardir, 'deleted')
 
-        log.info("Moving job %s to deleted folder", jobfile)
+        log.info("Moving job %s from %s to deleted folder %s", jobfile, fullpath, delpath)
         os.rename(fullpath, os.path.join(delpath, jobfile))
 
     def restart(self):
