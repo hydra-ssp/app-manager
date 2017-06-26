@@ -1,4 +1,0 @@
-#app_logs{
-    height: 300px;
-    overflow-y: scroll;
-}
