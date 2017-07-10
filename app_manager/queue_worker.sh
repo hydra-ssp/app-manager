@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with HydraPlatform.  If not, see <http://www.gnu.org/licenses/>
 
-QUEUEROOT=~/.hydra/jobqueue
+QUEUEROOT=~/.hydra/apps/queue
 
 QUEUEDDIR=queued
 RUNNINGDIR=running
@@ -39,7 +39,7 @@ do
     do
         echo $JOB
         mv $QUEUEROOT/$QUEUEDDIR/$JOB $QUEUEROOT/$RUNNINGDIR/
-        bash $QUEUEROOT/$RUNNINGDIR/$JOB
+        . $QUEUEROOT/$RUNNINGDIR/$JOB
         STATUS=$?
         if [ $STATUS -ne 0 ]; 
         then
