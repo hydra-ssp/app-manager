@@ -9,7 +9,7 @@ from lxml import etree
 from datetime import datetime
 from dateutil import parser as date_parser
 
-from HydraLib import config
+from hydra_base import config
 
 log = logging.getLogger(__name__)
 
