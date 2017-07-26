@@ -20,8 +20,7 @@ var get_app_details = function(app_id){
     }
     
     var error = function(resp){
-
-        $('#run_app_modal .modal-body').append("<div class='alert alert-danger' role='alert'>An error has occurred retrieving the details for this app.</div>")
+        show_error('#run_app_modal .modal-body', "An error has occurred retrieving the details for this app.")
     }
 
     $.ajax({
@@ -143,6 +142,12 @@ var get_param_row = function(param){
 
 }
 
+$(document).on('hide.bs.modal', '#run_app_modal', function(){
+    $("#run_app_modal .alert").remove()
+})
+
+
+
 /*********************Running Apps******************************/
 $(document).on('click', '#run-app-button', function(){
     
@@ -154,7 +159,7 @@ $(document).on('click', '#run-app-button', function(){
     }
 
     var error = function(){
-        $('#run_app_modal .modal-body').prepend("<div class='alert alert-danger' role='alert'>An error has occurred retrieving the details for this app.</div>")
+        show_error("#run_app_modal .modal-body","An error has occurred retrieving the details for this app." )
     }
 
     /*To run an app the following information needs to be transmitted as a json
@@ -190,13 +195,17 @@ var poll_jobs = function(repeat){
         }else{
             $('#joblist').empty()
 
+            var active_jobs = []
+
             for (var i=0; i<resp.length; i++){
                 var j = resp[i]
                 jobs[j.jobid] = j
                 if (j.status == 'queued'){
                     icon = 'fa fa-ellipsis-v'
+                    active_jobs.push(j.job_id)
                 }else if (j.status == 'running'){
                     icon = 'fa fa-spinner fa-spin'
+                    active_jobs.push(j.job_id)
                 }else if (j.status == 'finished'){
                     icon = 'fa fa-check'
                 }else if (j.status == 'failed'){
@@ -211,7 +220,7 @@ var poll_jobs = function(repeat){
                 }
                 $('#joblist').append("<div class='btn jobstatus "+j.status+"' data-toggle='modal' data-target='#app_status_modal' scenario_id='"+j.scenario_id+"' job-id='"+j.jobid+"' app-id='"+j.app_id+"'><div class='name'>"+name+"</div><span class='icon'><i class='"+icon+"'></i></span><span class='inner-button'><i class='delete-job icon fa fa-trash'></i></span><span class='inner-button'><i class='restart-job icon fa fa-refresh'></i></span></div>")
             }
-            if (repeat==undefined || repeat == true){
+            if (active_jobs.length > 0 && (repeat==undefined || repeat == true)){
                 setTimeout(poll_jobs, 5000) // 5 Seconds when there are active jobs
             }
         }
@@ -318,8 +327,7 @@ var get_job_details = function(job_id){
         update_job_details(resp)
     }
     var error = function(resp){
-        $('#app_status_modal .modal-body').append("<div class='alert alert-danger'>An error occurred getting the details for this job.</div>")
-        
+        show_error('#app_status_modal .modal-body', "An error occurred getting the details for this job.")
     }
     console.log(get_job_details_url + job_id)
     $.ajax({
