@@ -259,6 +259,9 @@ $(document).on('click', '#joblist .jobstatus', function(){
     $('#app_progressbar .progress').empty()
 
     $('#app_logs').empty()
+
+    $("#get-native-logs-btn").attr('href', native_log_url+"/"+job_id)
+    $("#get-native-output-btn").attr('href', native_output_url+"/"+job_id)
    
     get_job_details(job_id)
  

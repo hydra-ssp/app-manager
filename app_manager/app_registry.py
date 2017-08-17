@@ -9,6 +9,8 @@ from lxml import etree
 from datetime import datetime
 from dateutil import parser as date_parser
 
+import tempfile
+
 from HydraLib import config
 
 log = logging.getLogger(__name__)
@@ -22,7 +24,7 @@ class AppInterface(object):
 
         self.app_registry = AppRegistry()
         self.job_queue = JobQueue(config.get('plugin', 'queue_directory', '/tmp'))
-        self.job_queue.rebuild()
+        self.job_queue.rebuild(self.app_registry)
         self.upload_dir = config.get('plugin', 'upload_dir', '/tmp/uploads')
 
     def installed_apps_as_dict(self):
@@ -52,7 +54,7 @@ class AppInterface(object):
     def get_status(self, network_id=None, user_id=None, job_id=None):
         "Return the status of matching jobs."
 
-        self.job_queue.rebuild()
+        self.job_queue.rebuild(self.app_registry)
         if job_id is not None:
             if job_id in self.job_queue.jobs.keys():
                 return [dict(jobid=job_id,
@@ -78,8 +80,29 @@ class AppInterface(object):
                 response.append(dict(scenario_id=job.scenario_id, network_id=job.network_id, owner=job.owner, app_id=job.app_id, jobid=job.id, status=job.status, scenario_name=job.scenario_name, network_name=job.network_name))
             return response
 
+    def get_native_logs(self, job_id):
+        """
+            If the app ran a model which produced its own log file, retrieve it here
+        """
+        if job_id in self.job_queue.jobs.keys():
+            return self.job_queue.jobs[job_id].get_native_logs()
+        else:
+            return {}
+
+    def get_native_output(self, job_id):
+
+        """
+            If the app ran a model which produced its own output file, retrieve it here
+        """
+        if job_id in self.job_queue.jobs.keys():
+            return self.job_queue.jobs[job_id].get_native_output()
+        else:
+            return {}
+
     def get_job_details(self, job_id):
-        "Return the status of matching jobs."
+        """
+            Return the status of matching jobs.
+        """
         if job_id in self.job_queue.jobs.keys():
             return self.job_queue.jobs[job_id].get_details()
         else:
@@ -206,6 +229,8 @@ class App(object):
                 self._parse_args(xmlroot.find('non_mandatory_args'))
         self.info['switches'] = \
                 self._parse_args(xmlroot.find('switches'), isswitch=True)
+        self.info['nativelogextension'] = xmlroot.find('plugin_nativelogextension').text
+        self.info['nativeoutputextension'] = xmlroot.find('plugin_nativeoutputextension').text
 
         # Private properties
         self.command = xmlroot.find('plugin_command').text
@@ -310,10 +335,12 @@ class JobQueue(object):
 
         self.folders = {'queued'   : 'queued',
                         'running'  : 'running',
+                        'tmp'      : 'tmp',
                         'finished' : 'finished',
                         'failed'   : 'failed',
                         'deleted'  : 'deleted',
                         'logs'     : 'logs',
+                        'model'    : 'model',
                         'uploads'  : 'uploads'
                         }
 
@@ -368,17 +395,20 @@ class JobQueue(object):
 
             job.path = self.folders['queued']
 
-    def rebuild(self):
+    def rebuild(self, app_registry):
         """Rebuild job queue after server restart.
         """
         self.jobs = dict()
         for folder in self.folders.values():
-            if folder in ('logs', 'uploads', 'deleted'):
+            if folder in ('logs', 'uploads', 'deleted', 'model'):
                 continue
             for jr, jf, jobfiles in os.walk(os.path.join(self.root, folder)):
                 for jfile in jobfiles:
+                    if not jfile.endswith('job'):
+                        continue
                     exjob = Job()
                     exjob.from_file(os.path.join(jr, jfile))
+                    exjob.app = app_registry.installed_apps.get(exjob.app_id)
                     exjob.job_queue = self
                     self.jobs[exjob.id] = exjob
                     exjob.logfile = os.path.join(self.root, self.folders['logs'], "%s.log"%exjob.id)
@@ -504,12 +534,94 @@ class Job(object):
         """
             Get the log output. Limit to 100 lines to save time.
         """
-        logs = []
         with open(self.logfile, 'r') as f:
             if limit is not None:
                 return f.readlines()[0:limit]
             else:
                 return f.readlines()
+
+    def get_native_logs(self):
+        """
+            If the job has run a program which produces its own native log
+            retrieve it here. Returns a file. A file containing
+            "EXCLUDE_START" and "EXCLUDE_END" will exclude everything between these
+            two tags. This is in case the log file contains sensitive information which
+            can be controlled by the model (by placing the tags into the log)
+        """
+        all_lines = []
+        ignoring = False
+
+        if self.app is None:
+            return "App for job cannot be found. Has it been removed?"
+        
+        log_extension = self.app.info.get('nativelogextension', 'log')
+
+        error_flag    = self.app.info.get('errorflag', '**** ') #Default to GAMS error flag
+
+        folder = os.path.join(self.job_queue.root, self.job_queue.folders['model'], self.id) 
+
+        files = filter(os.path.isfile, glob.glob(folder + os.sep + "*.%s"%log_extension))
+
+        if len(files) == 0:
+            return "No log file found"
+
+        files.sort(key=lambda x: os.path.getmtime(x))
+        
+
+        nativelogfile=files[0]
+
+        with open(nativelogfile, 'r') as f:
+            prev_line = ""
+            for l in f.readlines():
+                if l.find('EXCLUDE_START') >= 0:
+                    ignoring = True
+                    continue
+                elif l.find('EXCLUDE_END') >= 0:
+                    ignoring=False
+                    continue
+
+                #If an error is spotted, ouput that line and the one previous, regardless of
+                #whether we're in ignore mode
+                if l.find(error_flag) >= 0:
+                    #Don't double-add if there's two lines like this in a row
+                    if prev_line.find(error_flag) == -1:
+                        all_lines.append(prev_line)
+                    all_lines.append(l)
+                elif ignoring is False:
+                    all_lines.append(l)
+
+
+                prev_line = l
+
+        nativefilename = nativelogfile.split(os.sep)[-1]
+        
+        log.info("%s Lines", len(all_lines))
+        with open(tempfile.gettempdir() + os.sep + nativefilename, 'w') as f:
+            f.write("".join(all_lines))
+            log.info("Return file at: %s", f.name)
+            return f
+
+    def get_native_output(self):
+        """
+            If the job has run a program which produces its own native log
+            retrieve it here. Returns a file.
+        """
+
+        if self.app is None:
+            return "App for job cannot be found. Has it been removed?"
+        
+        output_extension = self.app.info.get('nativeoutputextension', 'out')
+        folder = os.path.join(self.job_queue.root, self.job_queue.folders['model'], self.id) 
+        files = filter(os.path.isfile, glob.glob(folder + os.sep + "*.%s"%output_extension))
+
+        if len(files) == 0:
+            return "No output file found"
+
+        files.sort(key=lambda x: os.path.getmtime(x))
+
+        f =  open(files[-1], 'r')
+        log.info("Return file at: %s", f.name)
+        return f
 
     def get_output(self):
         output = []
@@ -554,7 +666,7 @@ class Job(object):
     def is_running(self):
         """Convenience function.
         """
-        return self.status == 'running'
+        return self.status == 'running' or self.status == 'tmp'
 
     @property
     def is_finished(self):
