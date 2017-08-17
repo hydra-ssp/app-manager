@@ -1,4 +1,8 @@
 <!-- Modal -->
+<script>
+    var native_log_url = "{{url_for('app_manager.native_logs')}}"
+    var native_output_url = "{{url_for('app_manager.native_output')}}"
+</script>
 <div id="app_status_modal" class="modal fade" role="dialog">
     <div class="modal-dialog" role="document">
         <!-- Modal content-->
@@ -21,12 +25,23 @@
                     <strong>Message</strong>
                     <span id="job_message" style="margin: 15px;"></span>
                 </div>
+
                 <div id='job_id_container'></div>
                 <h4>Progress</h4>
                 <div id="app_progressbar"  style="margin: 15px;">
                     <div class="progress">
                     </div>
                 </div><!--app_progressbar-->
+                <div>
+                    <a id="get-native-logs-btn" class="btn btn-default" target="_blank">
+                        Get Native Log
+                        <i class="fa fa-download"></i>
+                    </a>
+                    <a id="get-native-output-btn" class="btn btn-default" target="_blank">
+                        Get Output
+                        <i class="fa fa-download"></i>
+                    </a>
+                </div>
                 <h4 >Logs</h4>
                 <div id="app_logs">
                 </div><!--app_logs-->

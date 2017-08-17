@@ -1,5 +1,5 @@
 
-from flask import render_template, session, jsonify, redirect, url_for, request
+from flask import render_template, session, jsonify, redirect, url_for, request, send_file
 
 import zipfile
 import os
@@ -253,3 +253,41 @@ def restart_job(job_id):
     appinterface.restart_job(job_id)
 
     return 'OK'
+
+@appmanager.route('/app/nativelogs', methods=['GET'])
+@appmanager.route('/app/nativelogs/<job_id>', methods=['GET'])
+def native_logs(job_id):
+    """Get the full details for a job, taken from the appropriate log file and output.
+    """
+    
+    if job_id is None:
+        parameters = json.loads(request.get_data())
+        job_id = parameters['job_id']
+
+    log.info('Getting native logs for job: %s', job_id )
+
+    nativelogs = appinterface.get_native_logs(job_id)
+
+    if isinstance(nativelogs, str):
+        return nativelogs
+
+    return send_file(nativelogs.name, attachment_filename=nativelogs.name.split(os.sep)[-1], as_attachment=True)
+
+@appmanager.route('/app/nativeoutput', methods=['GET'])
+@appmanager.route('/app/nativeoutput/<job_id>', methods=['GET'])
+def native_output(job_id):
+    """Get the full details for a job, taken from the appropriate log file and output.
+    """
+    
+    if job_id is None:
+        parameters = json.loads(request.get_data())
+        job_id = parameters['job_id']
+
+    log.info('Getting native output for job: %s', job_id )
+
+    nativeoutput = appinterface.get_native_output(job_id)
+
+    if isinstance(nativeoutput, str):
+        return nativeoutput
+
+    return send_file(nativeoutput,attachment_filename=nativeoutput.name.split(os.sep)[-1], as_attachment=True)
