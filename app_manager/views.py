@@ -5,7 +5,6 @@ import zipfile
 import os
 import json
 
-from flask_security import login_required
 
 from werkzeug import secure_filename
 
@@ -20,20 +19,17 @@ log = logging.getLogger(__name__)
 from . import appmanager
 
 @appmanager.route('/apps/')
-@login_required
 def go_apps():
     app_list = appinterface.installed_apps_as_dict() 
     return render_template('app_manager/apps.html', apps=app_list)
 
 @appmanager.route('/app/<app_id>')
-@login_required
 def go_app(app_id):
     # Do some stuff
     app_info = appinterface.app_info(app_id)
     return render_template('app_manager/app.html', app=app_info)
 
 @appmanager.route('/apps/upload_app', methods=['POST'])
-@login_required
 def do_upload_app():
     # Do some stuff
 
@@ -51,13 +47,11 @@ def do_upload_app():
     return redirect(url_for('app_manager.go_apps'))
 
 @appmanager.route('/apps/delete_app')
-@login_required
 def do_delete_app():
     # Do some stuff
     return jsonify({'status': 'OK'})
 
 @appmanager.route('/apps/installed', methods=['GET'])
-@login_required
 def get_installed_apps():
     """Returns information on all installed apps as list of dict of the form
 
@@ -71,7 +65,6 @@ def get_installed_apps():
 
 @appmanager.route('/app/info/<app_id>', methods=['GET'])
 @appmanager.route('/app/info/', methods=['GET'])
-@login_required
 def get_app_info(app_id):
     """Returns the contents of the 'plugin.xml' as json string, except for the
     parts that are not of general interest, such as location and the exact
@@ -91,7 +84,6 @@ def get_app_info(app_id):
 
 
 @appmanager.route('/app/run', methods=['POST'])
-@login_required
 def run_app():
     """To run an app the following information needs to be transmitted as a json
     string:
@@ -171,7 +163,6 @@ def _parse_args(args, files):
     return params
 
 @appmanager.route('/app/status', methods=['POST'])
-@login_required
 def job_status():
     """Get the job status for a given network or a given user by transmitting a
     json string that looks like this 
@@ -202,7 +193,6 @@ def job_status():
 @appmanager.route('/app/details/<job_id>', methods=['GET'])
 @appmanager.route('/job/<job_id>',         methods=['GET'])
 @appmanager.route('/app/details/',         methods=['POST'])
-@login_required
 def job_details(job_id):
     """Get the full details for a job, taken from the appropriate log file and output.
     """
@@ -219,7 +209,6 @@ def job_details(job_id):
 
 @appmanager.route('/job/delete/<job_id>', methods=['GET' ])
 @appmanager.route('/job/delete/',         methods=['POST'])
-@login_required
 def delete_job(job_id):
     """
         Delete a job by removing it from the queued / finished / failed directory
@@ -237,7 +226,6 @@ def delete_job(job_id):
 
 @appmanager.route('/job/restart/<job_id>', methods=['GET' ])
 @appmanager.route('/job/restart/',         methods=['POST'])
-@login_required
 def restart_job(job_id):
     """
         Restart a job by removing it from the finished / failed directory 

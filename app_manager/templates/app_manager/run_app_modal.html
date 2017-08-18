@@ -7,7 +7,7 @@
     var get_job_details_url = "{{url_for('app_manager.job_details')}}";
     var delete_job_url = "{{url_for('app_manager.delete_job')}}";
     var restart_job_url = "{{url_for('app_manager.restart_job')}}";
-    var uid = "{{session['hydra_user_id']}}";
+    var uid = "{{session['user_id']}}";
 </script>
 <div class="modal fade" tabindex="-1" role="dialog" id="run_app_modal">
   <div class="modal-dialog" role="document">
