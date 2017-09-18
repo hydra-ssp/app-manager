@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with HydraPlatform.  If not, see <http://www.gnu.org/licenses/>
 
-QUEUEROOT=~/.hydra/apps/queue
+QUEUEROOT=/var/www/basinit/apps/queue
 
 QUEUEDDIR=queued
 RUNNINGDIR=running
@@ -62,6 +62,7 @@ do
             MODELPATH=$(echo $JOBCALL |  python -c 'x = raw_input().split(" "); print (x[x.index("-m")+1]).replace("'"'"'", "")')
 
             #Identify the file name of the model
+            MODELCONTAINER=$(echo $MODELPATH | python -c 'import os; print os.sep.join(raw_input().split(os.sep)[:-1]).replace("'"'"'", "")')
             MODELFILE=$(echo $MODELPATH | python -c 'import os; print raw_input().split(os.sep)[-1].replace("'"'"'", "")')
             echo $MODELFILE
 
@@ -77,6 +78,15 @@ do
             rm $QUEUEROOT/$MODELDIR/$JOBID/*
             
             ln -s $MODELPATH $QUEUEROOT/$MODELDIR/$JOBID/$MODELFILE
+            
+            TXT_INPUTS=$(ls $MODELCONTAINER/*.txt)
+            echo $TXT_INPUTS
+	    for TXTINPUT in $TXT_INPUTS
+	    do
+                TXTFILE=$(echo $TXTINPUT | python -c 'import os; print raw_input().split(os.sep)[-1].replace("'"'"'", "")')
+                echo $TXTFILE
+                ln -s $TXTINPUT $QUEUEROOT/$MODELDIR/$JOBID/$TXTFILE
+	    done
             
             #Remove the reference to the actual model run in the script and replace it with the symlink.
             NEWCMD=$(echo $JOBCALL"__"$QUEUEROOT/$MODELDIR/$JOBID/$MODELFILE | python -c 'x = raw_input().split("__"); y = x[0].split(" "); i = y.index("-m"); y[i+1]=x[1]; print (" ".join(y))')
