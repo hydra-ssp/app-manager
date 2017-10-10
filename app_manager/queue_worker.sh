@@ -14,8 +14,11 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with HydraPlatform.  If not, see <http://www.gnu.org/licenses/>
+export LD_LIBRARY_PATH=/Applications/GAMS24.8/sysdir/
+export DYLD_LIBRARY_PATH=/Applications/GAMS24.8/sysdir/
+echo $LD_LIBRARY_PATH
 
-QUEUEROOT=/var/www/basinit/apps/queue
+QUEUEROOT=~/.hydra/apps/queue
 
 QUEUEDDIR=queued
 RUNNINGDIR=running
@@ -23,6 +26,9 @@ FINISHEDDIR=finished
 FAILEDDIR=failed
 TMPDIR=tmp
 MODELDIR=model
+
+
+echo "Starting Job Queue ..."
 
 while true
 do
@@ -33,7 +39,7 @@ do
 
     if [ $NJOBS -eq 0 ];
     then
-        echo "Waiting for jobs ..."
+#        echo "Waiting for jobs ..."
         sleep 10
     fi
 
@@ -81,32 +87,36 @@ do
             
             TXT_INPUTS=$(ls $MODELCONTAINER/*.txt)
             echo $TXT_INPUTS
-	    for TXTINPUT in $TXT_INPUTS
-	    do
-                TXTFILE=$(echo $TXTINPUT | python -c 'import os; print raw_input().split(os.sep)[-1].replace("'"'"'", "")')
-                echo $TXTFILE
-                ln -s $TXTINPUT $QUEUEROOT/$MODELDIR/$JOBID/$TXTFILE
-	    done
-            
-            #Remove the reference to the actual model run in the script and replace it with the symlink.
-            NEWCMD=$(echo $JOBCALL"__"$QUEUEROOT/$MODELDIR/$JOBID/$MODELFILE | python -c 'x = raw_input().split("__"); y = x[0].split(" "); i = y.index("-m"); y[i+1]=x[1]; print (" ".join(y))')
-            echo $NEWCMD >> $QUEUEROOT/$RUNNINGDIR/$JOB.amended
-            echo "Running amended run file" $QUEUEROOT/$RUNNINGDIR/$JOB.amended
 
-            . $QUEUEROOT/$RUNNINGDIR/$JOB.amended
+            for TXTINPUT in $TXT_INPUTS
+            do
+                    TXTFILE=$(echo $TXTINPUT | python -c 'import os; print raw_input().split(os.sep)[-1].replace("'"'"'", "")')
+                    echo $TXTFILE
+                    ln -s $TXTINPUT $QUEUEROOT/$MODELDIR/$JOBID/$TXTFILE
+            done
 
-            echo "Removing amended run file"
-            rm $QUEUEROOT/$RUNNINGDIR/$JOB.amended
+                #Remove the reference to the actual model run in the script and replace it with the symlink.
+                NEWCMD=$(echo $JOBCALL"__"$QUEUEROOT/$MODELDIR/$JOBID/$MODELFILE | python -c 'x = raw_input().split("__"); y = x[0].split(" "); i = y.index("-m"); y[i+1]=x[1]; print (" ".join(y))')
+                echo $NEWCMD >> $QUEUEROOT/$RUNNINGDIR/$JOB.amended
+                echo "Running amended run file" $QUEUEROOT/$RUNNINGDIR/$JOB.amended
+
+                . $QUEUEROOT/$RUNNINGDIR/$JOB.amended
+                STATUS=$?
+
+                echo "Removing amended run file"
+                rm $QUEUEROOT/$RUNNINGDIR/$JOB.amended
+
+                if [ $STATUS -ne 0 ];
+                then
+                    mv $QUEUEROOT/$RUNNINGDIR/$JOB $QUEUEROOT/$FAILEDDIR/
+                else
+                    mv $QUEUEROOT/$RUNNINGDIR/$JOB $QUEUEROOT/$FINISHEDDIR/
+                fi
+
+                echo "Waiting for jobs ..."
+
         fi
     
-        STATUS=$?
-        
-        if [ $STATUS -ne 0 ]; 
-        then
-            mv $QUEUEROOT/$RUNNINGDIR/$JOB $QUEUEROOT/$FAILEDDIR/
-        else
-            mv $QUEUEROOT/$RUNNINGDIR/$JOB $QUEUEROOT/$FINISHEDDIR/
-        fi
     done
 
 done
