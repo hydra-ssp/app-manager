@@ -3,7 +3,7 @@
     var native_log_url = "{{url_for('app_manager.native_logs')}}"
     var native_output_url = "{{url_for('app_manager.native_output')}}"
 </script>
-<div id="app_status_modal" class="modal fade" role="dialog">
+<div id="job_status_modal" class="modal fade" role="dialog">
     <div class="modal-dialog" role="document">
         <!-- Modal content-->
         <div class="modal-content">
@@ -12,42 +12,46 @@
                 <h4 class="modal-title"></h4>
             </div><!--modal header-->
             <div class='modal-body'>
-                <h4>Information</h4>
+                <h4>{{_('Information')}}</h4>
                 <div>
-                    <strong>Status:</strong>
-                    <span id="app_status"  style="margin: 15px;"></span>
+                    <strong>{{_('Status')}}:</strong>
+                    <span id="job_status"  style="margin: 15px;"></span>
                 </div>
                 <div>
-                    <strong>Job ID:</strong>
+                    <strong>{{_('Job ID')}}:</strong>
                     <span id="job_id_container"  style="margin: 15px;"></span>
                 </div>
                 <div>
-                    <strong>Message</strong>
+                    <strong>{{_('Started At')}}:</strong>
+                    <span id="job_started_at"  style="margin: 15px;"></span>
+                </div>
+                <div>
+                    <strong>{{_('Message')}}</strong>
                     <span id="job_message" style="margin: 15px;"></span>
                 </div>
 
                 <div id='job_id_container'></div>
-                <h4>Progress</h4>
+                <h4>{{_('Progress')}}</h4>
                 <div id="app_progressbar"  style="margin: 15px;">
                     <div class="progress">
                     </div>
                 </div><!--app_progressbar-->
                 <div>
                     <a id="get-native-logs-btn" class="btn btn-default" target="_blank">
-                        Get Native Log
+                        {{_('Get Native Log')}}
                         <i class="fa fa-download"></i>
                     </a>
                     <a id="get-native-output-btn" class="btn btn-default" target="_blank">
-                        Get Output
+                        {{_('Get Output')}}
                         <i class="fa fa-download"></i>
                     </a>
                 </div>
-                <h4 >Logs</h4>
+                <h4 >{{_('Logs')}}</h4>
                 <div id="app_logs">
                 </div><!--app_logs-->
             </div> <!--modal body -->
             <div class="modal-footer">
-                    <button type="button" id="close-app-status-button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="button" id="close-app-status-button" class="btn btn-default" data-dismiss="modal">{{_('Close')}}</button>
             </div>
         </div><!--modal content-->
     </div><!-- modal dialog-->

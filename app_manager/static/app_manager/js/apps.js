@@ -218,7 +218,7 @@ var poll_jobs = function(repeat){
                 if (name == '' || name == undefined || name == null){
                     name = app_dict[j.app_id]['name'];
                 }
-                $('#joblist').append("<div class='btn jobstatus "+j.status+"' data-toggle='modal' data-target='#app_status_modal' scenario_id='"+j.scenario_id+"' job-id='"+j.jobid+"' app-id='"+j.app_id+"'><div class='name'>"+name+"</div><span class='icon'><i class='"+icon+"'></i></span><span class='inner-button'><i class='delete-job icon fa fa-trash'></i></span><span class='inner-button'><i class='restart-job icon fa fa-refresh'></i></span></div>")
+                $('#joblist').append("<div class='btn jobstatus "+j.status+"' data-toggle='modal' data-target='#job_status_modal' scenario_id='"+j.scenario_id+"' job-id='"+j.jobid+"' app-id='"+j.app_id+"'><div class='name'>"+name+"</div><span class='icon'><i class='"+icon+"'></i></span><span class='inner-button'><i class='delete-job icon fa fa-trash'></i></span><span class='inner-button'><i class='restart-job icon fa fa-refresh'></i></span></div>")
             }
             if (active_jobs.length > 0 && (repeat==undefined || repeat == true)){
                 setTimeout(poll_jobs, 5000) // 5 Seconds when there are active jobs
@@ -251,17 +251,19 @@ $(document).on('click', '#joblist .jobstatus', function(){
     var app_details = app_dict[app_id]
 
 
-    $('#app_status_modal .modal-title').empty()
-    var modal = $('#app_status_modal .modal-title').text(app_details.name)
+    $('#job_status_modal .modal-title').empty()
+    var modal = $('#job_status_modal .modal-title').text(app_details.name)
 
-    $('#app_status_modal .alert').remove();
+    $('#job_status_modal .alert').remove();
 
     $('#job_id_container').empty()
     $('#job_id_container').text(job_id)
     
-    $('#app_status').empty()
-    $('#app_status').text(jobs[job_id].status)
+    $('#job_status').empty()
+    $('#job_status').text(jobs[job_id].status)
 
+    $('#job_started_at').empty()
+    $('#job_started_at').text(jobs[job_id]['started_at'])
 
     $('#job_message').empty()
 
@@ -309,7 +311,7 @@ var update_job_details = function(details){
 
     if (progress != undefined){
         var prog = progress[0]/progress[1] * 100
-        $('#app_progressbar .progress').append('<div class="progress-bar progress-bar-striped active" id="app_status_progress_bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: '+prog+'%"></div>')
+        $('#app_progressbar .progress').append('<div class="progress-bar progress-bar-striped active" id="job_status_progress_bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: '+prog+'%"></div>')
     }else{
         $('#app_progressbar').append("<div class='alert alert-info'>No progress available</div>")
     }
@@ -330,7 +332,7 @@ var get_job_details = function(job_id){
         update_job_details(resp)
     }
     var error = function(resp){
-        show_error('#app_status_modal .modal-body', "An error occurred getting the details for this job.")
+        show_error('#job_status_modal .modal-body', "An error occurred getting the details for this job.")
     }
     console.log(get_job_details_url + job_id)
     $.ajax({

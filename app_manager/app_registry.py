@@ -76,8 +76,8 @@ class AppInterface(object):
                         matching_jobs.append(job)
 
             response = []
-            for job in matching_jobs:
-                response.append(dict(scenario_id=job.scenario_id, network_id=job.network_id, owner=job.owner, app_id=job.app_id, jobid=job.id, status=job.status, scenario_name=job.scenario_name, network_name=job.network_name))
+            for job in sorted(matching_jobs, key=lambda x:x.enqueued_at, reverse=True):
+                response.append(dict(scenario_id=job.scenario_id, network_id=job.network_id, owner=job.owner, app_id=job.app_id, jobid=job.id, status=job.status, scenario_name=job.scenario_name, network_name=job.network_name, started_at=job.enqueued_at.strftime('%d/%m/%Y - %H:%M:%S')))
             return response
 
     def get_native_logs(self, job_id):
@@ -688,6 +688,7 @@ def scan_installed_apps(plugin_path):
     different versions of the same App.
     """
 
+    log.info("Scanning installed apps in %s", plugin_path)
     plugin_files = []
     for proot, pfolders, pfiles in os.walk(plugin_path, followlinks=True):
         for item in pfiles:
@@ -699,6 +700,8 @@ def scan_installed_apps(plugin_path):
         app = App(pxml=pxml)
         appkey = app.unique_id
         installed_apps[appkey] = app
+    
+    log.info("%s installed apps found", len(installed_apps))
 
     return installed_apps
 
