@@ -45,6 +45,7 @@ do
 
     for JOB in $QJOBS
     do
+        date '+%F %T %Z'
         echo $JOB
         mv $QUEUEROOT/$QUEUEDDIR/$JOB $QUEUEROOT/$TMPDIR/$JOB
 
@@ -112,7 +113,7 @@ do
                 else
                     mv $QUEUEROOT/$RUNNINGDIR/$JOB $QUEUEROOT/$FINISHEDDIR/
                 fi
-
+                date '+%F %T %Z'
                 echo "Waiting for jobs ..."
 
         fi
